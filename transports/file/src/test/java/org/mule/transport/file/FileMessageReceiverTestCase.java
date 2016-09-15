@@ -17,6 +17,8 @@ import org.mule.util.FileUtils;
 
 import java.io.File;
 
+import org.junit.Test;
+
 public class FileMessageReceiverTestCase extends AbstractMessageReceiverTestCase
 {
     File read = FileUtils.newFile("testcasedata/read");
@@ -29,6 +31,22 @@ public class FileMessageReceiverTestCase extends AbstractMessageReceiverTestCase
         // file endpoint functions tests for this
     }
 
+    @Test
+    public void testNotProcessingEmptyFile()
+    {
+        try
+        {
+            FileMessageReceiver fmr = (FileMessageReceiver) getMessageReceiver();
+            fmr.doConnect();
+            fmr.poll();
+
+        } catch (Exception e)
+        {
+
+        }
+
+    }
+
     @Override
     public MessageReceiver getMessageReceiver() throws Exception
     {
@@ -39,7 +57,7 @@ public class FileMessageReceiverTestCase extends AbstractMessageReceiverTestCase
 
         read.deleteOnExit();
         move.deleteOnExit();
-
+        String dir = read.getAbsolutePath();
         return new FileMessageReceiver(connector, mockComponent, endpoint,
             read.getAbsolutePath(), move.getAbsolutePath(), null, 1000);
     }
