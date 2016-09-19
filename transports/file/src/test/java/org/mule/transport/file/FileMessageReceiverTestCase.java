@@ -6,23 +6,29 @@
  */
 package org.mule.transport.file;
 
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
+import org.mule.api.MuleEvent;
+import org.mule.api.MuleException;
 import org.mule.api.endpoint.InboundEndpoint;
+import org.mule.api.processor.MessageProcessor;
 import org.mule.api.service.Service;
 import org.mule.api.transport.Connector;
 import org.mule.api.transport.MessageReceiver;
 import org.mule.transport.AbstractMessageReceiverTestCase;
-import org.mule.util.FileUtils;
 
-import java.io.File;
-
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public class FileMessageReceiverTestCase extends AbstractMessageReceiverTestCase
 {
-    File read = FileUtils.newFile("testcasedata/read");
-    File move = FileUtils.newFile("testcasedata/move");
+    @Rule
+    public TemporaryFolder read = new TemporaryFolder();
+
+    @Rule
+    public TemporaryFolder move = new TemporaryFolder();
 
     public void testReceiver() throws Exception
     {
@@ -32,19 +38,23 @@ public class FileMessageReceiverTestCase extends AbstractMessageReceiverTestCase
     }
 
     @Test
-    public void testNotProcessingEmptyFile()
+    public void testNotProcessingEmptyFile() throws Exception
     {
-        try
+        FileMessageReceiver fmr = (FileMessageReceiver) getMessageReceiver();
+        read.newFile("empty.tmp");
+        fmr.initialise();
+        fmr.doInitialise();
+        fmr.setListener(new MessageProcessor()
         {
-            FileMessageReceiver fmr = (FileMessageReceiver) getMessageReceiver();
-            fmr.doConnect();
-            fmr.poll();
-
-        } catch (Exception e)
-        {
-
-        }
-
+            @Override
+            public MuleEvent process(MuleEvent event) throws MuleException
+            {
+                fail("Should not process empty file");
+                return null;
+            }
+        });
+        fmr.doConnect();
+        fmr.poll();
     }
 
     @Override
@@ -55,11 +65,8 @@ public class FileMessageReceiverTestCase extends AbstractMessageReceiverTestCase
 
         Service mockComponent = mock(Service.class);
 
-        read.deleteOnExit();
-        move.deleteOnExit();
-        String dir = read.getAbsolutePath();
         return new FileMessageReceiver(connector, mockComponent, endpoint,
-            read.getAbsolutePath(), move.getAbsolutePath(), null, 1000);
+           read.getRoot().getAbsolutePath(), move.getRoot().getAbsolutePath(), null, 1000);
     }
 
     @Override
